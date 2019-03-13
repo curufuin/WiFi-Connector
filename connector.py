@@ -54,10 +54,11 @@ class Connector():
                 if cell.ssid == ssid:
                     print("connecting to: " + str(ssid))
                     if cell.encrypted is False:
-                        if True:
+                        try:
                             print("connecting to open wifi")
                             return self.wireless.connect(ssid, "")
-                        else:
+                        except:
+                            print("couldn't connect")
                             return False
 
                     elif cell.encrypted is True:
