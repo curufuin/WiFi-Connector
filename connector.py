@@ -66,54 +66,71 @@ class Connector():
         self.ratings = self.sortDict(self.ratings)
         return self.ratings
 
-    def conn(self, ssid):
-        if self.wireless.current() == None:
-		for cell in self.cells:
-		        if cell.ssid == ssid:
-		            print("connecting to: " + str(ssid))
-                            #connect to insecure wifi
-		            if cell.encrypted is False:
-		                try:
-		                    print("\nconnecting to open wifi")
+    def ipExists(self):
+        try:
+            test = netifaces.ifaddresses(c.interface)[2]
+            return True
+        except:
+            return False
 
-                                    f = open(self.wifiConfigFile, 'r')
-                                    lines = f.readlines()
-                                    ssidExists = False
-                                    for line in lines:
-                                        if 'ssid="' + ssid in line:
-                                            ssidExists = True
-                                    f.close()
-                                    if not ssidExists:
-                                        cmd = "network={\n" + 'ssid="' + ssid + '"\n' + "key_mgmt=NONE\n" + "}\n"
-                                        f = open(self.wifiConfigFile, 'a')
-                                        f.write(cmd)
-                                        f.close()
-                                    cmd = "sudo service wpa_supplicant restart"
-                                    os.system(cmd)
-                                    time.sleep(3)
-                                    cmd = "sudo iwconfig " + self.interface + " essid '" + cell.ssid + "'"
-                                    os.system(cmd)
-                                    time.sleep(3)
-                                    cmd = "sudo dhclient " + self.interface 
-                                    os.system(cmd)
-                                    time.sleep(3)
-                                    # only return true if connected and acquired an ip address
-                                    if self.wireless.current() is not None and netifaces.ifaddresses(c.interface)[2] is not None:
-		                        return True
-                                    else:
-                                        return False
-		                except:
-		                    return False
-                            #connect to encrypted wireless networks
-		            elif cell.encrypted is True:
-		                print("encrypted, looking for PW")
-		                try:
-		                    pw = self.passwords[ssid]
-		                    print(pw)
-		                    return self.wireless.connect(ssid, pw)
-		                except:
-		                    print("couldn't connect'")
-		                    return False
+    def conn(self, ssid):
+        #if not connected to a wifi already:
+        if self.wireless.current() == None or not self.ipExists():
+            #flush both essid and ip
+            os.system('sudo iwconfig ' + self.interface + ' essid ""')
+            time.sleep(3)
+            os.system('ip addr flush dev wlan1')
+            time.sleep(4)
+	    for cell in self.cells:
+	        if cell.ssid == ssid:
+	            print("connecting to: " + str(ssid))
+                    #connect to insecure wifi
+	            if cell.encrypted is False:
+	                if True:
+	                    print("\nconnecting to open wifi")
+
+                            f = open(self.wifiConfigFile, 'r')
+                            lines = f.readlines()
+                            ssidExists = False
+                            for line in lines:
+                                if 'ssid="' + ssid in line:
+                                    ssidExists = True
+                            f.close()
+                            if not ssidExists:
+                                cmd = "network={\n" + 'ssid="' + ssid + '"\n' + "key_mgmt=NONE\n" + "}\n"
+                                f = open(self.wifiConfigFile, 'a')
+                                f.write(cmd)
+                                f.close()
+                            cmd = "sudo service wpa_supplicant restart"
+                            os.system(cmd)
+                            time.sleep(3)
+                            cmd = "sudo iwconfig " + self.interface + " essid '" + cell.ssid + "'"
+                            os.system(cmd)
+                            #if connected and acquired an ip address
+                            if self.wireless.current() is not None:
+                                for num in range(0, 3):
+                                    if self.ipExists():
+                                        return True
+                                    time.sleep(30)
+                                print("couldn't connect")
+                                return False
+                            else:
+                                print("couldn't connect1")
+                                return False
+	                else:
+                            print("couldn't connect2")
+	                    return False
+                    #connect to encrypted wireless networks
+	            elif cell.encrypted is True:
+	                print("encrypted, looking for PW")
+	                try:
+	                    pw = self.passwords[ssid]
+	                    print(pw)
+	                    self.wireless.connect(ssid, pw)
+                            return True
+	                except:
+	                    print("couldn't connect'")
+	                    return False
         else:
             print("already connected to: " + str(self.wireless.current()))
             return self.wireless.current()
@@ -140,7 +157,6 @@ class Connector():
             for line in f:
                 key, val = line.split(":")
                 self.passwords[key] = val.rstrip()
-                print(self.passwords)
 
     def sigmoid(self, x):
         return 1 / (1 + math.exp(-x))
