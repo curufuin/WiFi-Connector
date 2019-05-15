@@ -43,24 +43,33 @@ class Connector():
         print(values)
         newdict = OrderedDict()
         for val1 in values:
-		for key,value in dict1.items():
-		    if value == val1:
-		        newdict[key] = value
+            for key, value in dict1.items():
+                if value == val1:
+                    newdict[key] = value
         return newdict
 
     def scan(self):
         #find available wireless networks
-        for cell in self.search():
-            self.ratings[str(cell.ssid)] = self.rate(cell)
-        time.sleep(4)
-        print(self.ratings)
-        for cell in self.search():
-            self.ratings[str(cell.ssid)] = self.rate(cell)
-        time.sleep(4)
-        print(self.ratings)
-        for cell in self.search():
-            self.ratings[str(cell.ssid)] = self.rate(cell)
-        print(self.ratings)
+        try:
+            for cell in self.search():
+                self.ratings[str(cell.ssid)] = self.rate(cell)
+            time.sleep(4)
+            print(self.ratings)
+        except:
+            print("couldn't can networks")
+        try:
+            for cell in self.search():
+                self.ratings[str(cell.ssid)] = self.rate(cell)
+            time.sleep(4)
+            print(self.ratings)
+        except:
+            print("couldn't can networks")
+        try:
+            for cell in self.search():
+                self.ratings[str(cell.ssid)] = self.rate(cell)
+            print(self.ratings)
+        except:
+            print("couldn't can networks")
         for ssid in self.blacklist:
             self.ratings.pop(ssid, None)
         self.ratings = self.sortDict(self.ratings)
@@ -86,25 +95,28 @@ class Connector():
 	            print("connecting to: " + str(ssid))
                     #connect to insecure wifi
 	            if cell.encrypted is False:
-	                if True:
+	                try:
 	                    print("\nconnecting to open wifi")
 
                             f = open(self.wifiConfigFile, 'r')
                             lines = f.readlines()
                             ssidExists = False
                             for line in lines:
-                                if 'ssid="' + ssid in line:
+                                if 'ssid="' + str(ssid) in line:
                                     ssidExists = True
                             f.close()
                             if not ssidExists:
-                                cmd = "network={\n" + 'ssid="' + ssid + '"\n' + "key_mgmt=NONE\n" + "}\n"
+                                cmd = "network={\n" + 'ssid="' + str(ssid) + '"\n' + "key_mgmt=NONE\n" + "}\n"
                                 f = open(self.wifiConfigFile, 'a')
                                 f.write(cmd)
                                 f.close()
                             cmd = "sudo service wpa_supplicant restart"
                             os.system(cmd)
                             time.sleep(3)
-                            cmd = "sudo iwconfig " + self.interface + " essid '" + cell.ssid + "'"
+                            if "'" in cell.ssid:
+                                cmd = "sudo iwconfig " + self.interface + ' essid "' + str(cell.ssid) + '"'
+                            else:
+                                cmd = "sudo iwconfig " + self.interface + " essid '" + str(cell.ssid) + "'"
                             os.system(cmd)
                             #if connected and acquired an ip address
                             if self.wireless.current() is not None:
@@ -117,7 +129,7 @@ class Connector():
                             else:
                                 print("couldn't connect1")
                                 return False
-	                else:
+	                except:
                             print("couldn't connect2")
 	                    return False
                     #connect to encrypted wireless networks
